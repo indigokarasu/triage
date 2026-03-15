@@ -6,8 +6,7 @@ Extends `spec-ocas-shared-schemas.md` (DecisionRecord, LogEvent, ConfigBase).
 
 ## Task
 
-Primary record. State transitions are new appended records with the same
-`task_id` — never mutations.
+Primary record. State transitions are new appended records with the same `task_id` — never mutations.
 
 ```json
 {
@@ -59,9 +58,9 @@ Primary record. State transitions are new appended records with the same
 
 Written to `.triage/signals.jsonl`. Consumers poll this file.
 
-### task_ready
+### task_ready (standard)
 
-Emitted when a task transitions to `active`.
+Emitted when a task transitions to `active` with `routing_hint != mentor`.
 
 ```json
 {
@@ -73,9 +72,31 @@ Emitted when a task transitions to `active`.
 }
 ```
 
-### task_completed
+### task_ready (Mentor handoff — required extension)
 
-Emitted when a task reaches `completed` or `cancelled`.
+Emitted when `routing_hint = mentor`. The `heartbeat_interval_seconds` field is **required**. Signals without it are malformed and must not be picked up by Mentor.
+
+```json
+{
+  "signal": "task_ready",
+  "task_id": "string",
+  "routing_hint": "mentor",
+  "priority_score": "number",
+  "heartbeat_interval_seconds": "number — 60 | 600 | 3600",
+  "heartbeat_rationale": "string — human-readable explanation",
+  "emitted_at": "ISO8601"
+}
+```
+
+**Heartbeat interval assignment:**
+
+| Priority score | heartbeat_interval_seconds |
+|---|---|
+| 70–100 | 60 |
+| 40–69 | 600 |
+| 0–39 | 3600 (default for low; may extend to 21600 for explicit non-urgent background) |
+
+### task_completed
 
 ```json
 {
@@ -99,15 +120,11 @@ Written by the consuming system to prevent double-pickup.
 }
 ```
 
-A `task_ready` signal without a corresponding `task_acknowledged` within the
-same heartbeat window is eligible for re-emission on the next cycle.
+A `task_ready` signal without a corresponding `task_acknowledged` within the same heartbeat window is eligible for re-emission.
 
 ---
 
 ## DecisionRecord (Triage extension)
-
-Extends the shared DecisionRecord schema. Required for preemption events and
-scoring decisions.
 
 ```json
 {
@@ -115,7 +132,7 @@ scoring decisions.
   "timestamp": "ISO8601",
   "skill_id": "ocas-triage",
   "skill_version": "string",
-  "decision_type": "string — preemption | task_expired | stall_detected | queue_rebuild | overflow_drop",
+  "decision_type": "string — preemption | task_expired | stall_detected | queue_rebuild | overflow_drop | heartbeat_assigned",
   "description": "string",
   "evidence_refs": ["string — task_ids involved"],
   "outcome": "string",
@@ -126,21 +143,22 @@ scoring decisions.
     "new_task_id": "string | null",
     "score_delta": "number | null",
     "queue_depth_before": "number | null",
-    "queue_depth_after": "number | null"
+    "queue_depth_after": "number | null",
+    "heartbeat_interval_seconds": "number | null"
   }
 }
 ```
+
+Note: `heartbeat_assigned` is a new `decision_type`. Emit a DecisionRecord for every Mentor handoff that includes heartbeat injection, logging the priority score and assigned interval.
 
 ---
 
 ## config.json
 
-Extends ConfigBase.
-
 ```json
 {
   "skill_id": "ocas-triage",
-  "skill_version": "1.1.0",
+  "skill_version": "1.2.0",
   "config_version": "string",
   "created_at": "ISO8601",
   "updated_at": "ISO8601",
@@ -154,6 +172,9 @@ Extends ConfigBase.
   "debounce_window_seconds": 1,
   "duplicate_similarity_threshold": 0.90,
   "duplicate_window_minutes": 5,
-  "default_estimated_completion_seconds": 1800
+  "default_estimated_completion_seconds": 1800,
+  "heartbeat_high_priority_seconds": 60,
+  "heartbeat_medium_priority_seconds": 600,
+  "heartbeat_low_priority_seconds": 3600
 }
 ```

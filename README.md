@@ -1,94 +1,63 @@
-# ocas-triage
+# 🔀 Triage
 
-**Version:** 1.1.0  
-**Author:** Indigo Karasu  
-**Type:** system  
-**License:** MIT
+System scheduler and priority queue manager. Determines what gets attention next across all pending work. Maintains a durable priority queue, scores work deterministically, emits pickup signals, injects heartbeat cadence into Mentor handoffs, and handles interrupts. One active task at a time. Deterministic scoring. Durable queue.
 
-System scheduler and priority queue manager for OpenClaw agent systems. Triage's only job is to determine what gets attention next. It maintains a durable priority queue, scores work deterministically, emits pickup signals, and handles interrupts.
+---
 
-## What it does
+## 📖 Overview
 
-- Maintains a persistent priority queue across all pending work
-- Scores tasks deterministically using urgency, deadline proximity, consequence weight, and queue aging
-- Preempts active work when a higher-priority task arrives (threshold: +25 points)
-- Emits pickup signals (`task_ready`, `task_completed`) for downstream consumers
-- Handles debouncing, duplicate detection (>0.90 similarity = merge), and stall recovery
-- Logs every state transition and decision to durable storage
+Triage is a core OCAS component. Its only job is to determine what gets attention next. It maintains a durable priority queue, scores work deterministically, emits pickup signals, injects heartbeat cadence into Mentor handoffs, and handles interrupts.
 
-## What it does not do
+---
 
-- Route tasks to skills (that is Dispatch)
-- Decompose or plan work (that is Mentor)
-- Interpret domain intent or select execution paths
-- Triage raw messages or communications
+## 🔧 Tool Surface
 
-## When to invoke
+- `triage.task.add` — add work to the queue
+- `triage.task.remove` — remove work from queue
+- `triage.queue.list` — list all pending tasks with scores
+- `triage.queue.status` — current queue state and active task
+- `triage.interrupt` — preempt active work
+- `triage.pause` / `triage.resume` — pause/resume queue processing
+- Meta commands (bypass queue): `status`, `stop`, `pause`, `resume`
 
-- "Prioritize X over Y"
-- "What are you working on" / "What's pending"
-- "Stop what you're doing and do this first"
-- "Add this to the queue"
-- "Cancel that" / "Pause" / "Resume"
+---
 
-## Meta commands
+## 📊 Output & Journals
 
-These execute immediately and bypass the queue entirely:
+Maintains task queue (`queue.jsonl`), signal emissions with heartbeat assignments, and decision logs (`decisions.jsonl`). Every task logged with score breakdown and routing decision.
 
-```
-status / what are you working on
-stop / cancel that
-pause / resume
-```
+---
 
-Meta commands never appear in `queue.jsonl`.
+## ⏱️ Heartbeat & Background Tasks
 
-## Priority scoring
+**Heartbeat Injection** (CRITICAL in 1.2.0): When Triage scores a task with `routing_hint: mentor`, it MUST inject a `heartbeat_interval_seconds` into the `task_ready` signal before emission. This is not optional. Heartbeat intervals are priority-linked:
 
-```
-priority_score = urgency + deadline_proximity + consequence_weight +
-                 interruption_intent + quick_completion_bonus + queue_aging
-Clamp: 0–100
-```
+- **70–100 (high priority)** → 60 seconds
+- **40–69 (medium priority)** → 10 minutes
+- **0–39 (low priority)** → 1–6 hours (1 hour default)
 
-| Signal | Condition | Points |
-|---|---|---|
-| Urgency phrase | now / urgent / right away | +40 |
-| Interruption intent | actually / wait / change that | +35 |
-| Deadline proximity | within 1 hour | +35 |
-| Consequence weight | reservation / financial / coordination | +30 |
-| Quick completion | < 10 seconds | +40 |
-| Quick completion | < 1 minute | +25 |
-| Queue aging | per hour waiting, max +20 | +2/hr |
+`heartbeat_assigned` is recorded as a DecisionRecord `decision_type` for audit trail.
 
-Full scoring model in `references/scoring_model.md`.
+---
 
-## Storage layout
+## 🛠️ Features
 
-```
-.triage/
-  config.json       ConfigBase + triage settings
-  queue.jsonl       all task records, append-only
-  signals.jsonl     task_ready / task_completed / task_acknowledged
-  decisions.jsonl   DecisionRecord entries for preemption and scoring
-  history.jsonl     completed/cancelled tasks, last 100
-  journals/         action journal entries per run
-  reports/
-```
+- **Deterministic priority scoring** — urgency + deadline proximity + consequence + interruption intent + completion bonus + queue aging
+- **Task state lifecycle** — queued → active → completed/cancelled (with blocked, waiting_external states)
+- **Durable queue** — persistent `queue.jsonl` for resume across sessions
+- **Heartbeat governance** — priority-linked cadence prevents stalls (root cause fix: tasks no longer go idle overnight)
+- **Signal schema versioning** — `task_ready` now has two variants: standard (non-Mentor) and Mentor handoff (with heartbeat fields)
 
-## Reference files
+---
 
-| File | Contents |
-|---|---|
-| `references/schemas.md` | Task, signal, and DecisionRecord schemas |
-| `references/scoring_model.md` | Full scoring formula with signal examples |
-| `references/journal_spec.md` | Journal entry structure and OKR definitions |
-| `references/boundary_contracts.md` | Consumer pickup behavior and hard boundaries |
+## 📚 Documentation
 
-## Installation
+Read `SKILL.md` for operational details, schemas, and validation rules.
 
-Drop the `ocas-triage/` directory into your OpenClaw skills folder and reload your agent instance.
+See `references/` for detailed specifications and examples.
 
-## License
+---
 
-MIT
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
