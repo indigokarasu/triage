@@ -165,6 +165,18 @@ Read `references/boundary_contracts.md` for consumer pickup protocol.
 
 ---
 
+## Optional skill cooperation
+
+- Mentor — task assignment and heartbeat injection (via `task_ready` signals)
+- Dispatch — message routing and blocking signals
+- Base agent — picks up tasks from the queue
+
+## Journal outputs
+
+Action Journal — every task assignment, preemption, pickup, and command execution.
+
+---
+
 ## Reference files
 
 | File | When to read |
