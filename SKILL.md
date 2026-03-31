@@ -175,6 +175,48 @@ Read `references/boundary_contracts.md` for consumer pickup protocol.
 
 Action Journal — every task assignment, preemption, pickup, and command execution.
 
+## OKRs
+
+Universal OKRs from spec-ocas-journal.md apply to all runs.
+
+```yaml
+skill_okrs:
+  - name: queue_management_accuracy
+    metric: fraction of tasks scored and routed correctly
+    direction: maximize
+    target: 0.95
+    evaluation_window: 30_runs
+  - name: preemption_effectiveness
+    metric: fraction of preemptions that were justified by final priority
+    direction: maximize
+    target: 0.85
+    evaluation_window: 30_runs
+  - name: stall_detection_rate
+    metric: stalled tasks detected and handled before user escalation
+    direction: maximize
+    target: 0.90
+    evaluation_window: 30_runs
+  - name: heartbeat_accuracy
+    metric: fraction of Mentor handoffs with correct heartbeat interval
+    direction: maximize
+    target: 0.99
+    evaluation_window: 30_runs
+```
+
+## Initialization
+
+`triage.init`:
+
+1. Create `~/.triage/` directory if not present
+2. Write default `config.json` with ConfigBase fields
+3. Create empty JSONL files: `queue.jsonl`, `signals.jsonl`, `decisions.jsonl`, `history.jsonl`
+4. Create `journals/` and `reports/` directories
+5. Log initialization as a DecisionRecord in `decisions.jsonl`
+
+## Update command
+
+`triage.update` — Pull latest release from GitHub. Preserves `~/.triage/` and journals.
+
 ---
 
 ## Reference files
