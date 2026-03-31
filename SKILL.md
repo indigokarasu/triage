@@ -8,6 +8,16 @@ metadata: {"openclaw":{"emoji":"🔀","version":"1.2.0"}}
 
 Triage is the system scheduler. Its only job is to determine what gets attention next. It maintains a durable priority queue, scores work deterministically, emits pickup signals, injects heartbeat cadence into Mentor handoffs, and handles interrupts.
 
+## Responsibility boundary
+
+Triage owns: priority queue maintenance, deterministic task scoring, preemption decisions, Mentor handoff with heartbeat injection, task state transitions, and DecisionRecord logging.
+
+Triage does not own: task execution (Mentor), inbox or message prioritization (Dispatch), pattern analysis (Corvus), or any domain-specific work routing.
+
+## Ontology types
+
+This skill does not extract entities and does not emit Signals to Elephas.
+
 ## When to use
 
 - Prioritize competing tasks
