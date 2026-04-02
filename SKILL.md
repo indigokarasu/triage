@@ -16,7 +16,13 @@ Triage does not own: task execution (Mentor), inbox or message prioritization (D
 
 ## Ontology types
 
-This skill does not extract entities and does not emit Signals to Elephas.
+Triage observes entities during task scoring and scheduling:
+
+- **Entity/Person** — people associated with tasks (requesters, assignees, mentioned collaborators)
+- **Concept/Event** — deadlines, meetings, and time-bound work items that affect priority scoring
+- **Concept/Action** — tasks being scheduled, preempted, or completed
+
+Entity observations are recorded in journal outputs for downstream Chronicle ingestion.
 
 ## When to use
 
@@ -170,10 +176,22 @@ Read `references/boundary_contracts.md` for consumer pickup protocol.
 - Mentor — task assignment and heartbeat injection (via `task_ready` signals)
 - Dispatch — message routing and blocking signals
 - Base agent — picks up tasks from the queue
+- Elephas — journal entity observations consumed during Chronicle ingestion
 
 ## Journal outputs
 
 Action Journal — every task assignment, preemption, pickup, and command execution.
+
+When entities are encountered during a run, include structured entity observations in `decision.payload`:
+
+- `entities_observed` — list of entities encountered (Entity/Person, Concept/Event, Concept/Action), each with type, name, and context
+- `relationships_observed` — connections between entities (e.g., a person associated with a task, a deadline linked to a meeting)
+- `preferences_observed` — user preferences inferred from scheduling patterns (e.g., priority tendencies, preemption tolerance)
+
+Each entity observation must include a `user_relevance` field:
+- `user` — entity is directly related to the user's world (task owners, deadlines, meetings). Most Triage entities are `user`-relevant since tasks represent the user's actual work.
+- `agent_only` — entity encountered incidentally (e.g., a system-generated task ID referenced only for internal routing)
+- `unknown` — relevance is unclear
 
 ## OKRs
 
