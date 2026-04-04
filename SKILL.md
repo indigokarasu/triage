@@ -45,6 +45,16 @@ One active task at a time. Deterministic scoring. Durable queue. Priority-linked
 
 ---
 
+## Commands
+
+```bash
+triage.queue      # Check current queue and active task
+triage.add        # Add a new task to the queue
+triage.start      # Begin work on next priority task
+triage.status     # Show queue status and active task
+triage.preempt    # Interrupt current task for urgent work
+```
+
 ## Meta commands (bypass queue, execute immediately)
 
 ```
@@ -244,3 +254,7 @@ skill_okrs:
 | `references/schemas.md` | Task, signal, DecisionRecord schemas; heartbeat signal extension |
 | `references/scoring_model.md` | Full scoring formula, preemption rules, estimation heuristics |
 | `references/boundary_contracts.md` | Consumer pickup protocol; Mentor, Dispatch, base agent boundaries |
+
+## Support file map
+
+This skill includes no external support files.
